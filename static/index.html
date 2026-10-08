@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leaf check</title>
+<style>
+  :root {
+    --bg: #f4f7f4;
+    --card: #ffffff;
+    --ink: #17231c;
+    --muted: #5d6b62;
+    --line: #dce5de;
+    --green: #1f6b3a;
+    --green-soft: #e3f2e7;
+    --red: #b3361f;
+    --red-soft: #fbe9e5;
+    --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101713; --card: #18221c; --ink: #e8f0ea; --muted: #9db0a3;
+      --line: #2a3a30; --green: #6fcf8c; --green-soft: #1d3326;
+      --red: #ff8a73; --red-soft: #3a2420;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; padding: 20px 16px 48px;
+  }
+  main { max-width: 520px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; line-height: 1.2; margin: 8px 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .drop {
+    border: 2px dashed var(--line); border-radius: var(--radius);
+    padding: 28px 16px; text-align: center; transition: border-color .15s, background .15s;
+  }
+  .drop.over { border-color: var(--green); background: var(--green-soft); }
+  .drop p { margin: 0 0 16px; color: var(--muted); }
+  .btns { display: flex; flex-direction: column; gap: 10px; }
+  button, .btn {
+    font: inherit; font-weight: 600; border-radius: 10px; padding: 14px 18px;
+    border: 1px solid var(--green); cursor: pointer; text-align: center;
+    min-height: 48px;
+  }
+  .primary { background: var(--green); color: #fff; }
+  @media (prefers-color-scheme: dark) { .primary { color: #0c1a11; } }
+  .secondary { background: transparent; color: var(--green); }
+  button:focus-visible, summary:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+  input[type=file] { display: none; }
+  .tips { margin: 16px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .9rem; }
+  .tips li { padding-left: 1.2em; position: relative; margin: 4px 0; }
+  .tips li::before { content: "•"; position: absolute; left: .3em; color: var(--green); }
+
+  .hidden { display: none !important; }
+  .preview { width: 100%; max-height: 260px; object-fit: cover; border-radius: 10px; display: block; }
+  .loading { text-align: center; padding: 28px 0 8px; color: var(--muted); }
+  .spinner {
+    width: 32px; height: 32px; margin: 0 auto 12px; border-radius: 50%;
+    border: 3px solid var(--line); border-top-color: var(--green);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 3s; } }
+
+  .status {
+    display: inline-block; font-size: .85rem; font-weight: 600; padding: 4px 10px;
+    border-radius: 999px; margin: 18px 0 8px;
+  }
+  .status.ok { background: var(--green-soft); color: var(--green); }
+  .status.bad { background: var(--red-soft); color: var(--red); }
+  .crop { color: var(--muted); margin: 0; }
+  .disease { font-size: 1.6rem; font-weight: 700; line-height: 1.2; margin: 0 0 14px; }
+  .meter { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .meter > div { height: 100%; background: var(--green); width: 0; transition: width .5s ease; }
+  .meter.bad > div { background: var(--red); }
+  .conf { color: var(--muted); font-size: .9rem; margin: 6px 0 0; }
+  .warn {
+    background: var(--red-soft); color: var(--red); border-radius: 10px;
+    padding: 10px 12px; margin-top: 14px; font-size: .92rem;
+  }
+  h2 { font-size: 1.05rem; margin: 22px 0 6px; }
+  .card p { margin: 0; }
+  ul.list { margin: 0; padding-left: 1.2em; }
+  ul.list li { margin: 6px 0; }
+  details { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 14px; }
+  summary { cursor: pointer; font-weight: 600; }
+  details ul { margin: 10px 0 0; padding-left: 1.2em; color: var(--muted); }
+  .note { color: var(--muted); font-size: .82rem; margin-top: 20px; }
+  .again { width: 100%; margin-top: 20px; }
+  .error { color: var(--red); background: var(--red-soft); padding: 12px; border-radius: 10px; margin-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Check your plant's leaf</h1>
+  <p class="sub">Add a photo of one leaf and find out what is wrong and what to do.</p>
+
+  <section class="card" id="start">
+    <div class="drop" id="drop">
+      <p>Drag a photo here, or choose one below.</p>
+      <div class="btns">
+        <button class="primary" id="cameraBtn">Take photo</button>
+        <button class="secondary" id="galleryBtn">Choose from gallery</button>
+      </div>
+    </div>
+    <ul class="tips">
+      <li>Fill the photo with a single leaf.</li>
+      <li>Use daylight and keep the leaf in focus.</li>
+      <li>Pick a leaf that shows the problem.</li>
+    </ul>
+    <div class="error hidden" id="error" role="alert"></div>
+  </section>
+
+  <section class="card hidden" id="work">
+    <img class="preview" id="preview" alt="Your leaf photo">
+    <div class="loading" id="loading" role="status">
+      <div class="spinner"></div>Checking your leaf…
+    </div>
+
+    <div id="result" class="hidden">
+      <span class="status" id="status"></span>
+      <p class="crop" id="crop"></p>
+      <p class="disease" id="disease"></p>
+      <div class="meter" id="meter"><div id="bar"></div></div>
+      <p class="conf" id="conf"></p>
+      <div class="warn hidden" id="lowconf">Not sure about this one. Try a closer, sharper photo of a single leaf.</div>
+
+      <h2>About</h2>
+      <p id="about"></p>
+      <h2>What to do</h2>
+      <ul class="list" id="treatment"></ul>
+      <h2>How to prevent it</h2>
+      <ul class="list" id="prevention"></ul>
+
+      <details id="othersBox">
+        <summary>Other possibilities</summary>
+        <ul id="others"></ul>
+      </details>
+      <p class="note" id="disclaimer"></p>
+    </div>
+
+    <button class="primary again hidden" id="again">Check another leaf</button>
+  </section>
+
+  <input type="file" id="cameraInput" accept="image/*" capture="environment">
+  <input type="file" id="galleryInput" accept="image/*">
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function fillList(el, items) {
+  el.innerHTML = "";
+  items.forEach(t => { const li = document.createElement("li"); li.textContent = t; el.appendChild(li); });
+}
+function showError(msg) {
+  const e = $("error"); e.textContent = msg; e.classList.remove("hidden");
+}
+function reset() {
+  $("work").classList.add("hidden");
+  $("start").classList.remove("hidden");
+  $("result").classList.add("hidden");
+  $("again").classList.add("hidden");
+  $("error").classList.add("hidden");
+  $("cameraInput").value = ""; $("galleryInput").value = "";
+  window.scrollTo({ top: 0 });
+}
+
+async function analyze(file) {
+  if (!file) return;
+  if (!file.type.startsWith("image/")) { showError("Choose an image file (JPG or PNG)."); return; }
+  $("error").classList.add("hidden");
+  $("preview").src = URL.createObjectURL(file);
+  $("start").classList.add("hidden");
+  $("work").classList.remove("hidden");
+  $("loading").classList.remove("hidden");
+  $("result").classList.add("hidden");
+  $("again").classList.add("hidden");
+
+  const fd = new FormData(); fd.append("image", file);
+  try {
+    const res = await fetch("/predict", { method: "POST", body: fd });
+    const text = await res.text();
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (_) {
+      throw new Error("Server returned an invalid response. Check the Render logs.");
+    }
+    if (!res.ok) throw new Error(data.error || "Something went wrong.");
+    render(data);
+  } catch (err) {
+    reset();
+    showError(err.message || "Could not reach the server. Check that it is running and try again.");
+  }
+}
+
+function render(d) {
+  $("loading").classList.add("hidden");
+  const st = $("status");
+  st.textContent = d.healthy ? "Healthy" : "Disease found";
+  st.className = "status " + (d.healthy ? "ok" : "bad");
+  $("crop").textContent = d.crop;
+  $("disease").textContent = d.healthy ? "No disease found" : d.disease;
+  $("meter").className = "meter" + (d.healthy ? "" : " bad");
+  const pct = Math.round(d.confidence * 100);
+  $("bar").style.width = pct + "%";
+  $("conf").textContent = pct + "% sure";
+  $("lowconf").classList.toggle("hidden", d.confidence >= 0.6);
+  $("about").textContent = d.about;
+  fillList($("treatment"), d.treatment);
+  fillList($("prevention"), d.prevention);
+  fillList($("others"), d.others.map(o => `${o.crop}: ${o.disease} (${Math.round(o.confidence * 100)}%)`));
+  $("disclaimer").textContent = d.disclaimer;
+  $("result").classList.remove("hidden");
+  $("again").classList.remove("hidden");
+}
+
+$("cameraBtn").onclick = () => $("cameraInput").click();
+$("galleryBtn").onclick = () => $("galleryInput").click();
+$("cameraInput").onchange = e => analyze(e.target.files[0]);
+$("galleryInput").onchange = e => analyze(e.target.files[0]);
+$("again").onclick = reset;
+
+const drop = $("drop");
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => analyze(e.dataTransfer.files[0]));
+</script>
+</body>
+</html>
